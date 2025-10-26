@@ -1,7 +1,6 @@
 from typing import Optional, Union
 
 from flask import Flask
-import click
 
 from dotenv import load_dotenv
 
@@ -35,14 +34,5 @@ def create_app(config_object: Optional[Union[str, type]] = None) -> Flask:
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(core_bp)
-
-    from .seed import seed_data
-
-    @app.cli.command("seed-data")
-    @click.option("--with-reset", is_flag=True, help="既存データを全て削除してから投入します")
-    def seed_data_command(with_reset: bool) -> None:
-        """mini CRM のサンプルデータを生成します。"""
-        seed_data(with_reset=with_reset)
-        click.echo("Seed data generation completed.")
 
     return app

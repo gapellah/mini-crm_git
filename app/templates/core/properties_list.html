@@ -19,8 +19,9 @@
           <td>{{ property.address }}</td>
           <td>{{ property.note or "-" }}</td>
           <td>
-            <form method="post">
+            <form method="post" action="{{ url_for('core.delete_property', property_id=property.id) }}">
               {{ delete_forms[property.id].hidden_tag() }}
+              {{ delete_forms[property.id].id(value=property.id) }}
               {{ delete_forms[property.id].submit(class="button is-danger is-light is-small") }}
             </form>
           </td>
