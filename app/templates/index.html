@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}ダッシュボード{% endblock %}
+{% block content %}
+  <h1 class="title">ダッシュボード</h1>
+  <div class="columns">
+    <div class="column">
+      <div class="box has-text-centered">
+        <p class="heading">物件数</p>
+        <p class="title">{{ property_count }}</p>
+      </div>
+    </div>
+    <div class="column">
+      <div class="box has-text-centered">
+        <p class="heading">入居者数</p>
+        <p class="title">{{ tenant_count }}</p>
+      </div>
+    </div>
+    <div class="column">
+      <div class="box has-text-centered">
+        <p class="heading">契約数</p>
+        <p class="title">{{ lease_count }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="box">
+    <h2 class="subtitle">先月の物件別家賃合計・入居者数</h2>
+    <div style="height: 320px;">
+      <canvas id="propertyRentChart"></canvas>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof Chart === "undefined") {
+        return;
+      }
+      const propertyCtx = document.getElementById("propertyRentChart");
+      if (propertyCtx) {
+        const propertyLabels = {{ property_labels|tojson }};
+        const propertyData = {{ property_values|tojson }};
+        const propertyCounts = {{ property_counts|tojson }};
+        new Chart(propertyCtx, {
+          type: "bar",
+          data: {
+            labels: propertyLabels,
+            datasets: [
+              {
+                label: "家賃合計",
+                data: propertyData,
+                backgroundColor: "rgba(72, 199, 142, 0.6)",
+                borderColor: "#48c78e",
+                borderWidth: 1,
+                yAxisID: "y",
+              },
+              {
+                label: "入居者数",
+                data: propertyCounts,
+                type: "line",
+                yAxisID: "y1",
+                borderColor: "#ff6384",
+                backgroundColor: "rgba(255, 99, 132, 0.2)",
+                tension: 0.2,
+                fill: false,
+                pointRadius: 4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                position: "left",
+                beginAtZero: true,
+                suggestedMax: Math.max(...propertyData) * 1.2 || 10,
+                ticks: {
+                  callback: (value) => `${value}万`,
+                },
+                title: {
+                  display: true,
+                  text: "万円",
+                },
+              },
+              y1: {
+                position: "right",
+                beginAtZero: true,
+                suggestedMax: Math.max(...propertyCounts) * 1.2 || 5,
+                grid: {
+                  drawOnChartArea: false,
+                },
+                ticks: {
+                  callback: (value) => `${value}件`,
+                },
+                title: {
+                  display: true,
+                  text: "入居者数",
+                },
+              },
+              x: {
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 0,
+                },
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    if (ctx.datasetIndex === 0) {
+                      return ` ${ctx.parsed.y} 万円`;
+                    }
+                    return ` ${ctx.parsed.y} 件`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+    });
+  </script>
+{% endblock %}

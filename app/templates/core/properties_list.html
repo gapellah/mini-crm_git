@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}物件{% endblock %}
+{% block content %}
+  <h1 class="title">物件一覧</h1>
+  {% include "core/property_form.html" %}
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr>
+        <th>物件名</th>
+        <th>住所</th>
+        <th>備考</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for property in properties %}
+        <tr>
+          <td>{{ property.name }}</td>
+          <td>{{ property.address }}</td>
+          <td>{{ property.note or "-" }}</td>
+          <td>
+            <form method="post">
+              {{ delete_forms[property.id].hidden_tag() }}
+              {{ delete_forms[property.id].submit(class="button is-danger is-light is-small") }}
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="4">物件がまだ登録されていません。</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

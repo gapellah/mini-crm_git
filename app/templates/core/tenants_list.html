@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}入居者{% endblock %}
+{% block content %}
+  <h1 class="title">入居者一覧</h1>
+  {% include "core/tenant_form.html" %}
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr>
+        <th>物件</th>
+        <th>号室</th>
+        <th>氏名</th>
+        <th>メールアドレス</th>
+        <th>電話番号</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tenant in tenants %}
+        <tr>
+          <td>{{ tenant.property.name if tenant.property else "-" }}</td>
+          <td>{{ tenant.unit_number or "-" }}</td>
+          <td>{{ tenant.name }}</td>
+          <td>{{ tenant.email }}</td>
+          <td>{{ tenant.phone or "-" }}</td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="5">入居者がまだ登録されていません。</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

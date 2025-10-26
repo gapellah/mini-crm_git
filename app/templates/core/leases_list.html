@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}契約{% endblock %}
+{% block content %}
+  <h1 class="title">契約一覧</h1>
+  {% include "core/lease_form.html" %}
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>物件</th>
+        <th>号室</th>
+        <th>入居者</th>
+        <th>賃料（万円）</th>
+        <th>状態</th>
+        <th>開始日</th>
+        <th>終了日</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lease in leases %}
+        <tr {% if editing_lease and editing_lease.id == lease.id %}class="has-background-warning-light"{% endif %}>
+          <td>{{ lease.id }}</td>
+          <td>{{ lease.property.name }}</td>
+          <td>{{ lease.unit_number or "-" }}</td>
+          <td>{{ lease.tenant.name }}</td>
+          <td>{{ "{:,.1f}".format(lease.rent / 10000) }}万円</td>
+          <td>{{ status_labels.get(lease.status, lease.status) }}</td>
+          <td>{{ lease.start_date }}</td>
+          <td>{{ lease.end_date or "-" }}</td>
+          <td>
+            <div class="buttons are-small">
+              <a
+                class="button is-info is-light"
+                href="{{ url_for('core.leases', property_id=selected_property_id or lease.property_id, lease_id=lease.id) }}"
+              >編集</a>
+              <form
+                method="post"
+                action="{{ url_for('core.delete_tenant', tenant_id=lease.tenant.id) }}"
+              >
+                {{ delete_forms[lease.tenant.id].csrf_token }}
+                {{ delete_forms[lease.tenant.id].tenant_id(value=lease.tenant.id, id="delete-tenant-id-%s" % lease.tenant.id) }}
+                {{ delete_forms[lease.tenant.id].submit(class="button is-danger is-light") }}
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="9">契約がまだ登録されていません。</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const tenantsData = {{ tenants_data|tojson }};
+      const propertySelect = document.getElementById("{{ form.property_id.id }}");
+      const unitSelect = document.getElementById("{{ form.unit_number.id }}");
+      const tenantIdField = document.getElementById("{{ form.tenant_id.id }}");
+      const tenantDisplayField = document.getElementById("{{ form.tenant_display.id }}");
+
+      function syncTenantToUnit() {
+        if (!propertySelect || !unitSelect || !tenantIdField) {
+          return;
+        }
+        const propertyId = propertySelect.value || "0";
+        const tenants = tenantsData[propertyId] || [];
+        const targetUnit = unitSelect.value;
+        const match = tenants.find((tenant) => tenant.unit === targetUnit);
+        if (match) {
+          tenantIdField.value = String(match.id);
+          if (tenantDisplayField) {
+            tenantDisplayField.value = match.name;
+          }
+        } else {
+          tenantIdField.value = "";
+          if (tenantDisplayField) {
+            tenantDisplayField.value = "";
+          }
+        }
+      }
+
+      if (propertySelect) {
+        propertySelect.addEventListener("change", function () {
+          if (tenantIdField) {
+            tenantIdField.value = "";
+          }
+          if (tenantDisplayField) {
+            tenantDisplayField.value = "";
+          }
+        });
+      }
+      if (unitSelect) {
+        unitSelect.addEventListener("change", syncTenantToUnit);
+      }
+
+      syncTenantToUnit();
+    });
+  </script>
+{% endblock %}

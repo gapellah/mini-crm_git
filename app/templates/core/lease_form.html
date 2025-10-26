@@ -1,0 +1,126 @@
+<div class="box">
+  <h2 class="subtitle">{{ '契約を編集' if editing_lease else '契約を追加' }}</h2>
+  {% if editing_lease %}
+    <div class="notification is-warning is-light">
+      編集モード: {{ editing_lease.property.name if editing_lease.property else "-" }} / {{ editing_lease.unit_number or "-" }}
+      <a class="button is-small is-light" href="{{ url_for('core.leases', property_id=selected_property_id) }}">編集をやめる</a>
+    </div>
+  {% endif %}
+  <form method="post">
+    {{ form.hidden_tag() }}
+    <div class="columns">
+      <div class="column">
+        <div class="field">
+          <label class="label">{{ form.property_id.label }}</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              {{ form.property_id() }}
+            </div>
+          </div>
+          {% for error in form.property_id.errors %}
+            <p class="help is-danger">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="column">
+        <div class="field">
+          <label class="label">{{ form.unit_number.label }}</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              {{ form.unit_number() }}
+            </div>
+          </div>
+          {% for error in form.unit_number.errors %}
+            <p class="help is-danger">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      {{ form.tenant_id() }}
+      <label class="label">{{ form.tenant_display.label }}</label>
+      <div class="control">
+        {{ form.tenant_display(class="input", readonly=True) }}
+      </div>
+      {% for error in form.tenant_id.errors %}
+        <p class="help is-danger">{{ error }}</p>
+      {% endfor %}
+    </div>
+    <div class="columns">
+      <div class="column">
+        <div class="field">
+          <label class="label">{{ form.rent.label }}</label>
+          <div class="control">
+            {{ form.rent(class="input", step="0.1") }}
+          </div>
+          {% for error in form.rent.errors %}
+            <p class="help is-danger">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="column">
+        <div class="field">
+          <label class="label">{{ form.status.label }}</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              {{ form.status() }}
+            </div>
+          </div>
+          {% for error in form.status.errors %}
+            <p class="help is-danger">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="columns">
+      <div class="column">
+        <div class="field">
+          <label class="label">{{ form.start_date.label }}</label>
+          <div class="control">
+            {{ form.start_date(class="input", type="date") }}
+          </div>
+          {% for error in form.start_date.errors %}
+            <p class="help is-danger">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="column">
+        <div class="field">
+          <label class="label">{{ form.end_date.label }}</label>
+          <div class="control">
+            {{ form.end_date(class="input", type="date") }}
+          </div>
+          {% for error in form.end_date.errors %}
+            <p class="help is-danger">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        {{ form.submit(class="button is-primary") }}
+      </div>
+    </div>
+  </form>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById("{{ form.property_id.id }}");
+    if (!select) {
+      return;
+    }
+    select.addEventListener("change", function () {
+      const params = new URLSearchParams(window.location.search);
+      params.set("property_id", select.value);
+      const leaseInput = document.getElementById("{{ form.lease_id.id }}");
+      if (leaseInput && leaseInput.value) {
+        params.set("lease_id", leaseInput.value);
+      } else {
+        params.delete("lease_id");
+      }
+      const query = params.toString();
+      const base = "{{ url_for('core.leases') }}";
+      window.location = query ? `${base}?${query}` : base;
+    });
+  });
+</script>
