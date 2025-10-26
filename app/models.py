@@ -5,7 +5,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db
 
-
 class TimestampMixin:
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(
