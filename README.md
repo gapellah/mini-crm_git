@@ -1,40 +1,64 @@
-# Mini CRM (Flask)
-
-転職ポートフォリオ向けのシンプルな物件・契約管理アプリです。Flask と SQLAlchemy を使い、物件・入居者・契約の情報を一元管理できる最小限の構成になっています。
-
-## 主な機能
-- Flask-Login と Flask-WTF によるユーザー登録・ログイン
-- 物件 / 入居者 / 契約の一覧表示と登録
-- SQLAlchemy + Flask-Migrate を利用したデータベース管理
-- pytest を用いたスモークテスト
-
-## セットアップ
-1. 依存関係のインストール  
-   `python3 -m pip install -r requirements.txt`
-2. 環境変数の設定  
-   `.env.example` を `.env` にコピーし、`SECRET_KEY` と `DATABASE_URL` を必要に応じて調整してください。
-3. マイグレーションの初期化と適用  
-   ```
-   export FLASK_APP=wsgi        # Windows: set FLASK_APP=wsgi
-   flask db init || true        # 既に初期化済みならスキップされます
-   flask db migrate -m "init"
-   flask db upgrade
-   ```
-
-## アプリの起動
-```
-flask --app wsgi run --debug
-```
-
-## テスト
-```
-python3 -m pytest -q
-```
-
-## ディレクトリ構成
-- `app/` Flask アプリケーション本体
-- `migrations/` データベースマイグレーション
-- `tests/` pytest のテストコード
-- `wsgi.py` エントリーポイント
-- `config.py` 設定クラス
-- `requirements.txt` 依存パッケージの一覧
+# Single-database configuration for Flask.
+# 
+# # Mini CRM (Flask)
+# Flask 製の物件・契約管理ミニ CRM です。小規模チームが物件・入居者・契約の CRUD をひとつの UI で扱えるようにする最小構成のサンプルアプリケーションを想定しています。
+# 
+# セットアップ手順
+# python -m pip install -U pip
+# pip install -r requirements.txt
+# export FLASK_APP=wsgi            # Windows: set FLASK_APP=wsgi
+# flask db init || true            # 既に初期化済みなら無視されます
+# flask db migrate -m "init"
+# flask db upgrade
+# pytest -q
+# 
+# アプリの起動
+# flask --app wsgi run --debug
+# 
+# (コードテスト
+# python3 -m pytest -q )  
+# 
+# テストアドレス
+#  test1@test.com
+#  1234ab
+# 
+# 
+# 
+# 
+# 
+# ディレクトリ構成
+#  mini-crm/
+#   app/                   Flask アプリケーション本体
+#     __init__.py          アプリケーションファクトリの定義
+#     extensions.py        拡張（SQLAlchemy など）の初期化
+#     models.py            DB モデル定義
+#     blueprints/          認証・メイン機能の Blueprint 群
+#       auth/
+#         __init__.py
+#         routes.py        認証系ルート
+#         forms.py         ログイン / 登録フォーム
+#       core/
+#         __init__.py
+#         routes.py        物件・入居者・契約のルート
+#         forms.py         各種 CRUD フォーム
+#     templates/           Jinja2 テンプレート
+#       base.html          共通レイアウト
+#       index.html         ダッシュボード
+#       auth/
+#         login.html
+#         register.html
+#       core/
+#         properties_list.html
+#         property_form.html
+#         tenants_list.html
+#         tenant_form.html
+#         leases_list.html
+#         lease_form.html
+#     static/              静的ファイル置き場
+#   migrations/            Flask-Migrate のメタデータとリビジョン
+#   tests/                 pytest のテストコード
+#     test_smoke.py
+#   config.py              環境別設定クラス
+#   wsgi.py                デプロイ用エントリーポイント
+#   requirements.txt       依存パッケージ
+#   .env.example           環境変数テンプレート

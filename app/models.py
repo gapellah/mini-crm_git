@@ -5,7 +5,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db
 
-
 class TimestampMixin:
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(
@@ -59,6 +58,14 @@ class Tenant(TimestampMixin, db.Model):
         return f"<Tenant {self.name}>"
 
 
+class LeaseStatus:
+    ACTIVE = "active"
+    PENDING = "pending"
+    TERMINATED = "terminated"
+
+    ALL = (ACTIVE, PENDING, TERMINATED)
+
+
 class Lease(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     property_id = db.Column(db.Integer, db.ForeignKey("property.id"), nullable=False)
@@ -67,7 +74,7 @@ class Lease(TimestampMixin, db.Model):
     unit_number = db.Column(db.String(50), nullable=True)
     start_date = db.Column(db.Date, nullable=False, default=date.today)
     end_date = db.Column(db.Date, nullable=True)
-    status = db.Column(db.String(50), nullable=False, default="active")
+    status = db.Column(db.String(50), nullable=False, default=LeaseStatus.PENDING)
 
     property = db.relationship("Property", back_populates="leases")
     tenant = db.relationship("Tenant", back_populates="leases")

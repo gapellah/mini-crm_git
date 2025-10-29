@@ -3,6 +3,26 @@
   <form method="post">
     {{ form.hidden_tag() }}
     <div class="field">
+      <label class="label">{{ form.property_id.label }}</label>
+      <div class="control">
+        <div class="select is-fullwidth">
+          {{ form.property_id() }}
+        </div>
+      </div>
+      {% for error in form.property_id.errors %}
+        <p class="help is-danger">{{ error }}</p>
+      {% endfor %}
+    </div>
+    <div class="field">
+      <label class="label">{{ form.unit_number.label }}</label>
+      <div class="control">
+        {{ form.unit_number(class="input") }}
+      </div>
+      {% for error in form.unit_number.errors %}
+        <p class="help is-danger">{{ error }}</p>
+      {% endfor %}
+    </div>
+    <div class="field">
       <label class="label">{{ form.name.label }}</label>
       <div class="control">
         {{ form.name(class="input") }}
@@ -36,3 +56,18 @@
     </div>
   </form>
 </div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById("{{ form.property_id.id }}");
+    if (!select) {
+      return;
+    }
+    select.addEventListener("change", function () {
+      const params = new URLSearchParams(window.location.search);
+      params.set("property_id", select.value);
+      const query = params.toString();
+      const base = "{{ url_for('core.tenants') }}";
+      window.location = query ? `${base}?${query}` : base;
+    });
+  });
+</script>

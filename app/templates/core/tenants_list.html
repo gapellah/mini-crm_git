@@ -6,29 +6,25 @@
   <table class="table is-fullwidth is-striped">
     <thead>
       <tr>
+        <th>物件</th>
+        <th>号室</th>
         <th>氏名</th>
         <th>メールアドレス</th>
         <th>電話番号</th>
-        <th>操作</th>
       </tr>
     </thead>
     <tbody>
       {% for tenant in tenants %}
         <tr>
+          <td>{{ tenant.property.name if tenant.property else "-" }}</td>
+          <td>{{ tenant.unit_number or "-" }}</td>
           <td>{{ tenant.name }}</td>
           <td>{{ tenant.email }}</td>
           <td>{{ tenant.phone or "-" }}</td>
-          <td>
-            <form method="post" action="{{ url_for('core.delete_tenant', tenant_id=tenant.id) }}">
-              {{ delete_forms[tenant.id].hidden_tag() }}
-              {{ delete_forms[tenant.id].id(value=tenant.id) }}
-              {{ delete_forms[tenant.id].submit(class="button is-danger is-light is-small") }}
-            </form>
-          </td>
         </tr>
       {% else %}
         <tr>
-          <td colspan="4">入居者がまだ登録されていません。</td>
+          <td colspan="5">入居者がまだ登録されていません。</td>
         </tr>
       {% endfor %}
     </tbody>
