@@ -1,7 +1,14 @@
 <div class="box">
-  <h2 class="subtitle">入居者を追加</h2>
+  <h2 class="subtitle">{{ '入居者を編集' if editing_tenant else '入居者を追加' }}</h2>
+  {% if editing_tenant %}
+    <div class="notification is-warning is-light">
+      編集モード: {{ editing_tenant.property.name if editing_tenant.property else '-' }} / {{ editing_tenant.unit_number or '-' }} / {{ editing_tenant.name }}
+      <a class="button is-small is-light" href="{{ url_for('core.tenants', property_id=selected_property_id) }}">編集をやめる</a>
+    </div>
+  {% endif %}
   <form method="post">
     {{ form.hidden_tag() }}
+    {{ form.tenant_id() }}
     <div class="field">
       <label class="label">{{ form.property_id.label }}</label>
       <div class="control">
@@ -59,12 +66,16 @@
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const select = document.getElementById("{{ form.property_id.id }}");
+    const tenantIdField = document.getElementById("{{ form.tenant_id.id }}");
     if (!select) {
       return;
     }
     select.addEventListener("change", function () {
       const params = new URLSearchParams(window.location.search);
       params.set("property_id", select.value);
+      if (tenantIdField && tenantIdField.value) {
+        params.set("tenant_id", tenantIdField.value);
+      }
       const query = params.toString();
       const base = "{{ url_for('core.tenants') }}";
       window.location = query ? `${base}?${query}` : base;

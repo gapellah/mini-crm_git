@@ -1,3 +1,5 @@
+"""ミニCRMで扱うデータモデルと共通カラム定義をまとめたモジュール。"""
+
 from datetime import date
 
 from flask_login import UserMixin

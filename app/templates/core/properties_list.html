@@ -14,15 +14,25 @@
     </thead>
     <tbody>
       {% for property in properties %}
-        <tr>
+        <tr {% if editing_property and property.id == editing_property.id %}class="has-background-warning-light"{% endif %}>
           <td>{{ property.name }}</td>
           <td>{{ property.address }}</td>
           <td>{{ property.note or "-" }}</td>
           <td>
-            <form method="post">
-              {{ delete_forms[property.id].hidden_tag() }}
-              {{ delete_forms[property.id].submit(class="button is-danger is-light is-small") }}
-            </form>
+            <div class="buttons are-small">
+              {% if editing_property and property.id == editing_property.id %}
+                <span class="button is-static is-light">編集中</span>
+              {% else %}
+                <a
+                  class="button is-info is-light"
+                  href="{{ url_for('core.properties', property_id=property.id) }}"
+                >編集</a>
+              {% endif %}
+              <form method="post">
+                {{ delete_forms[property.id].hidden_tag() }}
+                {{ delete_forms[property.id].submit(class="button is-danger is-light") }}
+              </form>
+            </div>
           </td>
         </tr>
       {% else %}

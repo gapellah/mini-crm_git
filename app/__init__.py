@@ -1,3 +1,5 @@
+"""Flaskアプリ全体の初期化処理とCLIコマンドを提供するモジュール。"""
+
 from typing import Optional, Union
 
 from flask import Flask

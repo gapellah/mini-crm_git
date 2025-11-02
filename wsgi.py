@@ -1,3 +1,5 @@
+"""WSGIサーバーからFlaskアプリを起動するためのエントリーポイント。"""
+
 from app import create_app
 
 app = create_app()

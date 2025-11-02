@@ -1,12 +1,16 @@
+"""物件・入居者・契約の管理画面ルートをまとめたモジュール。"""
+
 from __future__ import annotations
 
 from datetime import date, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
+from urllib.parse import urlparse
 
 from ...extensions import db
 from ...models import Lease, LeaseStatus, Property, Tenant
@@ -72,13 +76,47 @@ def index():
 def properties():
     form = PropertyForm()
     delete_form = DeletePropertyForm()
+
+    edit_property_id = request.args.get("property_id", type=int)
+    editing_property = None
+    if edit_property_id is not None:
+        editing_property = Property.query.get(edit_property_id)
+        if editing_property:
+            form.property_id.data = str(edit_property_id)
+            if request.method == "GET":
+                form.name.data = editing_property.name
+                form.address.data = editing_property.address
+                form.note.data = editing_property.note
+
+    form.submit.label.text = "物件を更新" if editing_property else "物件を保存"
+
     if form.validate_on_submit():
+        property_id_raw = (form.property_id.data or "").strip()
+        property_id_value = int(property_id_raw) if property_id_raw.isdigit() else None
         normalized_name = form.name.data.strip()
         existing_properties = (
             Property.query.filter(func.lower(Property.name) == normalized_name.lower())
             .order_by(Property.id)
             .all()
         )
+
+        if property_id_value:
+            property_obj = Property.query.get_or_404(property_id_value)
+            property_obj.name = normalized_name
+            property_obj.address = form.address.data
+            property_obj.note = form.note.data
+
+            duplicates = [prop for prop in existing_properties if prop.id != property_obj.id]
+            for duplicate in duplicates:
+                for tenant in list(duplicate.tenants):
+                    tenant.property = property_obj
+                for lease in list(duplicate.leases):
+                    lease.property = property_obj
+                db.session.delete(duplicate)
+
+            db.session.commit()
+            flash("物件情報を更新しました。", "success")
+            return redirect(url_for("core.properties"))
 
         if existing_properties:
             canonical_property = existing_properties[0]
@@ -96,7 +134,7 @@ def properties():
 
             db.session.commit()
             flash("物件情報を更新しました。", "success")
-            return redirect(url_for("core.properties", property_id=canonical_property.id))
+            return redirect(url_for("core.properties"))
 
         new_property = Property(
             name=normalized_name,
@@ -106,7 +144,7 @@ def properties():
         db.session.add(new_property)
         db.session.commit()
         flash("物件を登録しました。", "success")
-        return redirect(url_for("core.properties", property_id=new_property.id))
+        return redirect(url_for("core.properties"))
 
     if delete_form.validate_on_submit():
         try:
@@ -131,6 +169,7 @@ def properties():
         properties=properties_list,
         form=form,
         delete_forms=delete_forms,
+        editing_property=editing_property,
     )
 
 
@@ -154,7 +193,42 @@ def tenants():
         else:
             selected_property_id = None
 
+    edit_tenant_id = request.args.get("tenant_id", type=int)
+    if edit_tenant_id is None:
+        tenant_id_raw = (form.tenant_id.data or "").strip()
+        if tenant_id_raw.isdigit():
+            edit_tenant_id = int(tenant_id_raw)
+
+    editing_tenant = None
+    if edit_tenant_id:
+        editing_tenant = Tenant.query.get(edit_tenant_id)
+        if editing_tenant:
+            selected_property_id = editing_tenant.property_id
+            form.tenant_id.data = str(edit_tenant_id)
+            if request.method == "GET":
+                form.property_id.data = editing_tenant.property_id
+                form.unit_number.data = editing_tenant.unit_number or ""
+                form.name.data = editing_tenant.name
+                form.email.data = editing_tenant.email or ""
+                form.phone.data = editing_tenant.phone or ""
+        else:
+            form.tenant_id.data = ""
+
+    form.submit.label.text = "入居者を更新" if editing_tenant else "入居者を保存"
+
     if form.validate_on_submit():
+        tenant_id_value = (form.tenant_id.data or "").strip()
+        if tenant_id_value:
+            tenant_obj = Tenant.query.get_or_404(int(tenant_id_value))
+            tenant_obj.property_id = form.property_id.data
+            tenant_obj.unit_number = form.unit_number.data
+            tenant_obj.name = form.name.data
+            tenant_obj.email = form.email.data or ""
+            tenant_obj.phone = form.phone.data or ""
+            db.session.commit()
+            flash("入居者情報を更新しました。", "success")
+            return redirect(url_for("core.tenants", property_id=form.property_id.data))
+
         new_tenant = Tenant(
             name=form.name.data,
             email=form.email.data,
@@ -170,15 +244,26 @@ def tenants():
     if request.method == "GET" and selected_property_id is not None:
         form.property_id.data = selected_property_id
 
-    tenants_query = Tenant.query.options(joinedload(Tenant.property)).order_by(Tenant.name)
+    tenants_query = (
+        Tenant.query.options(joinedload(Tenant.property))
+        .outerjoin(Property)
+        .order_by(Property.name.asc(), Tenant.unit_number.asc(), Tenant.name.asc())
+    )
     if selected_property_id is not None:
         tenants_query = tenants_query.filter(Tenant.property_id == selected_property_id)
     tenants_list = tenants_query.all()
+    delete_forms = {}
+    for tenant in tenants_list:
+        delete_instance = DeleteTenantForm()
+        delete_instance.tenant_id.data = tenant.id
+        delete_forms[tenant.id] = delete_instance
     return render_template(
         "core/tenants_list.html",
         tenants=tenants_list,
         form=form,
         selected_property_id=selected_property_id,
+        delete_forms=delete_forms,
+        editing_tenant=editing_tenant,
     )
 
 
@@ -244,16 +329,17 @@ def leases():
         if editing_lease.unit_number and editing_lease.unit_number not in valid_units:
             form.unit_number.choices.append((editing_lease.unit_number, editing_lease.unit_number))
             valid_units.add(editing_lease.unit_number)
-        form.lease_id.data = str(editing_lease.id)
-        form.property_id.data = editing_lease.property_id
-        form.unit_number.data = editing_lease.unit_number or ""
-        form.tenant_id.data = str(editing_lease.tenant_id)
-        form.tenant_display.data = editing_lease.tenant.name if editing_lease.tenant else ""
-        form.rent.data = float(editing_lease.rent or 0) / 10000
-        form.start_date.data = editing_lease.start_date
-        form.end_date.data = editing_lease.end_date
-        form.status.data = editing_lease.status
         form.submit.label.text = "契約を更新"
+        if request.method != "POST":
+            form.lease_id.data = str(editing_lease.id)
+            form.property_id.data = editing_lease.property_id
+            form.unit_number.data = editing_lease.unit_number or ""
+            form.tenant_id.data = str(editing_lease.tenant_id)
+            form.tenant_display.data = editing_lease.tenant.name if editing_lease.tenant else ""
+            form.rent.data = float(editing_lease.rent or 0) / 10000
+            form.start_date.data = editing_lease.start_date
+            form.end_date.data = editing_lease.end_date
+            form.status.data = editing_lease.status
     else:
         form.submit.label.text = "契約を保存"
         form.lease_id.data = ""
@@ -319,13 +405,67 @@ def leases():
             flash("契約を登録しました。", "success")
         return redirect(url_for("core.leases", property_id=property_id))
 
-    leases_list = Lease.query.options(
-        joinedload(Lease.property),
-        joinedload(Lease.tenant),
-    ).order_by(Lease.start_date.desc()).all()
+    lease_query = (
+        Lease.query.options(
+            joinedload(Lease.property),
+            joinedload(Lease.tenant),
+        )
+        .join(Property)
+        .order_by(Property.name.asc(), Lease.unit_number.asc(), Lease.start_date.desc())
+    )
 
     if selected_property_id is not None:
-        leases_list = [lease for lease in leases_list if lease.property_id == selected_property_id]
+        lease_query = lease_query.filter(Lease.property_id == selected_property_id)
+
+    leases_list = lease_query.all()
+
+    occupied_keys = {
+        (lease.property_id, lease.unit_number)
+        for lease in leases_list
+        if lease.property_id is not None and lease.unit_number
+    }
+
+    vacancy_rows: list[SimpleNamespace] = []
+    for tenant in tenants:
+        if tenant.property_id is None or not tenant.unit_number:
+            continue
+        if tenant.name.strip() != "空室":
+            continue
+        if selected_property_id is not None and tenant.property_id != selected_property_id:
+            continue
+        key = (tenant.property_id, tenant.unit_number)
+        if key in occupied_keys:
+            continue
+        vacancy_rows.append(
+            SimpleNamespace(
+                id=None,
+                property=tenant.property,
+                property_id=tenant.property_id,
+                unit_number=tenant.unit_number,
+                tenant=tenant,
+                rent=None,
+                status="空室",
+                start_date=None,
+                end_date=None,
+                is_vacancy=True,
+            ),
+        )
+
+    if vacancy_rows:
+        date_min_ordinal = date.min.toordinal()
+
+        def lease_sort_key(lease: Lease | SimpleNamespace) -> tuple[str, str, int, int]:
+            property_name = lease.property.name if getattr(lease, "property", None) else ""
+            unit_value = lease.unit_number or ""
+            is_vacancy = 1 if getattr(lease, "is_vacancy", False) else 0
+            start_date = getattr(lease, "start_date", None)
+            if isinstance(start_date, date):
+                start_ordinal = -start_date.toordinal()
+            else:
+                start_ordinal = -date_min_ordinal
+            return (property_name, unit_value, is_vacancy, start_ordinal)
+
+        leases_list = sorted([*leases_list, *vacancy_rows], key=lease_sort_key)
 
     tenants_data: dict[str, list[dict[str, str]]] = {}
     for tenant in tenants:
@@ -357,6 +497,7 @@ def leases():
 
 
 @core_bp.route("/leases/<int:tenant_id>/delete", methods=["POST"])
+@core_bp.route("/tenants/<int:tenant_id>/delete", methods=["POST"])
 @login_required
 def delete_tenant(tenant_id: int):
     form = DeleteTenantForm()
@@ -370,4 +511,9 @@ def delete_tenant(tenant_id: int):
     db.session.delete(tenant)
     db.session.commit()
     flash("入居者と関連契約を削除しました。", "info")
+    next_url = form.next_url.data or request.form.get("next_url")
+    if next_url:
+        parsed = urlparse(next_url)
+        if not parsed.netloc and parsed.path:
+            return redirect(next_url)
     return redirect(url_for("core.leases"))

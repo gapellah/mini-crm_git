@@ -20,26 +20,37 @@
     <tbody>
       {% for lease in leases %}
         <tr {% if editing_lease and editing_lease.id == lease.id %}class="has-background-warning-light"{% endif %}>
-          <td>{{ lease.id }}</td>
-          <td>{{ lease.property.name }}</td>
+          <td>{{ lease.id or "-" }}</td>
+          <td>{{ lease.property.name if lease.property else "-" }}</td>
           <td>{{ lease.unit_number or "-" }}</td>
-          <td>{{ lease.tenant.name }}</td>
-          <td>{{ "{:,.1f}".format(lease.rent / 10000) }}万円</td>
-          <td>{{ status_labels.get(lease.status, lease.status) }}</td>
-          <td>{{ lease.start_date }}</td>
+          <td>{{ lease.tenant.name if lease.tenant else "-" }}</td>
+          <td>
+            {% if lease.rent is not none %}
+              {{ "{:,.1f}".format(lease.rent / 10000) }}万円
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ status_labels.get(lease.status, lease.status) if lease.status else "-" }}</td>
+          <td>{{ lease.start_date or "-" }}</td>
           <td>{{ lease.end_date or "-" }}</td>
           <td>
             <div class="buttons are-small">
-              <a
-                class="button is-info is-light"
-                href="{{ url_for('core.leases', property_id=selected_property_id or lease.property_id, lease_id=lease.id) }}"
-              >編集</a>
+              {% if lease.is_vacancy %}
+                <span class="button is-static is-light">空室</span>
+              {% else %}
+                <a
+                  class="button is-info is-light"
+                  href="{{ url_for('core.leases', property_id=selected_property_id or lease.property_id, lease_id=lease.id) }}"
+                >編集</a>
+              {% endif %}
               <form
                 method="post"
                 action="{{ url_for('core.delete_tenant', tenant_id=lease.tenant.id) }}"
               >
                 {{ delete_forms[lease.tenant.id].csrf_token }}
                 {{ delete_forms[lease.tenant.id].tenant_id(value=lease.tenant.id, id="delete-tenant-id-%s" % lease.tenant.id) }}
+                {{ delete_forms[lease.tenant.id].next_url(value=url_for('core.leases', property_id=selected_property_id or lease.property_id)) }}
                 {{ delete_forms[lease.tenant.id].submit(class="button is-danger is-light") }}
               </form>
             </div>

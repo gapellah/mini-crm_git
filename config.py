@@ -1,3 +1,5 @@
+"""Flaskアプリの設定値とテスト用設定を定義するモジュール。"""
+
 from __future__ import annotations
 
 import os

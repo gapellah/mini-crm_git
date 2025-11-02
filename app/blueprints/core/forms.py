@@ -1,3 +1,5 @@
+"""物件・入居者・契約管理で利用するフォーム群を提供するモジュール。"""
+
 from flask_wtf import FlaskForm
 from wtforms import DateField, DecimalField, HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Email, Optional
@@ -6,6 +8,7 @@ from ...models import LeaseStatus
 
 
 class PropertyForm(FlaskForm):
+    property_id = HiddenField(validators=[Optional()])
     name = StringField("物件名", validators=[DataRequired()])
     address = StringField("住所", validators=[DataRequired()])
     note = TextAreaField("備考", validators=[Optional()])
@@ -18,12 +21,24 @@ class DeletePropertyForm(FlaskForm):
 
 
 class TenantForm(FlaskForm):
+    tenant_id = HiddenField(validators=[Optional()])
     property_id = SelectField("物件", coerce=int, validators=[DataRequired()])
     unit_number = StringField("号室", validators=[DataRequired()])
     name = StringField("氏名", validators=[DataRequired()])
-    email = StringField("メールアドレス", validators=[DataRequired(), Email()])
+    email = StringField("メールアドレス", validators=[Optional(), Email()])
     phone = StringField("電話番号", validators=[Optional()])
     submit = SubmitField("入居者を保存")
+
+    def validate(self, extra_validators: dict | None = None) -> bool:
+        """Allow blank contact info when the tenant entry marks a vacancy."""
+        if not super().validate(extra_validators):
+            return False
+        name_value = (self.name.data or "").strip()
+        email_value = (self.email.data or "").strip()
+        if name_value != "空室" and not email_value:
+            self.email.errors.append("空室以外の入居者にはメールアドレスを入力してください。")
+            return False
+        return True
 
 
 LEASE_STATUS_CHOICES = [
@@ -52,4 +67,5 @@ class LeaseForm(FlaskForm):
 
 class DeleteTenantForm(FlaskForm):
     tenant_id = HiddenField(validators=[DataRequired()])
+    next_url = HiddenField(validators=[Optional()])
     submit = SubmitField("削除")

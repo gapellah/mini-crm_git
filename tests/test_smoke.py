@@ -1,3 +1,5 @@
+"""主要な画面遷移とCRUDが成立するかを検証するスモークテスト。"""
+
 from decimal import Decimal
 
 import pytest

@@ -11,20 +11,42 @@
         <th>氏名</th>
         <th>メールアドレス</th>
         <th>電話番号</th>
+        <th>操作</th>
       </tr>
     </thead>
     <tbody>
       {% for tenant in tenants %}
-        <tr>
+        <tr {% if editing_tenant and tenant.id == editing_tenant.id %}class="has-background-warning-light"{% endif %}>
           <td>{{ tenant.property.name if tenant.property else "-" }}</td>
           <td>{{ tenant.unit_number or "-" }}</td>
           <td>{{ tenant.name }}</td>
           <td>{{ tenant.email }}</td>
           <td>{{ tenant.phone or "-" }}</td>
+          <td>
+            <div class="buttons are-small">
+              {% if editing_tenant and tenant.id == editing_tenant.id %}
+                <span class="button is-static is-light">編集中</span>
+              {% else %}
+                <a
+                  class="button is-info is-light"
+                  href="{{ url_for('core.tenants', property_id=selected_property_id or tenant.property_id, tenant_id=tenant.id) }}"
+                >編集</a>
+              {% endif %}
+              <form
+                method="post"
+                action="{{ url_for('core.delete_tenant', tenant_id=tenant.id) }}"
+              >
+                {{ delete_forms[tenant.id].csrf_token }}
+                {{ delete_forms[tenant.id].tenant_id(value=tenant.id, id="tenant-delete-id-%s" % tenant.id) }}
+                {{ delete_forms[tenant.id].next_url(value=url_for('core.tenants', property_id=selected_property_id) if selected_property_id else url_for('core.tenants')) }}
+                {{ delete_forms[tenant.id].submit(class="button is-danger is-light") }}
+              </form>
+            </div>
+          </td>
         </tr>
       {% else %}
         <tr>
-          <td colspan="5">入居者がまだ登録されていません。</td>
+          <td colspan="6">入居者がまだ登録されていません。</td>
         </tr>
       {% endfor %}
     </tbody>

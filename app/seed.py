@@ -1,3 +1,5 @@
+"""開発やデモ向けにサンプルデータを投入するユーティリティ。"""
+
 from __future__ import annotations
 
 import random

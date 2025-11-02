@@ -1,7 +1,14 @@
 <div class="box">
-  <h2 class="subtitle">物件を追加</h2>
+  <h2 class="subtitle">{{ '物件を編集' if editing_property else '物件を追加' }}</h2>
+  {% if editing_property %}
+    <div class="notification is-warning is-light">
+      編集モード: {{ editing_property.name }}（{{ editing_property.address }}）
+      <a class="button is-small is-light" href="{{ url_for('core.properties') }}">編集をやめる</a>
+    </div>
+  {% endif %}
   <form method="post">
     {{ form.hidden_tag() }}
+    {{ form.property_id() }}
     <div class="field">
       <label class="label">{{ form.name.label }}</label>
       <div class="control">

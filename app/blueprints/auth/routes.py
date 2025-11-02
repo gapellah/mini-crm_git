@@ -1,3 +1,5 @@
+"""認証画面のルーティングと処理フローを定義するモジュール。"""
+
 from __future__ import annotations
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
