@@ -1,0 +1,126 @@
+/* North European minimal palette */
+:root {
+  --crm-background: #f8f5f0;
+  --crm-surface: #ffffff;
+  --crm-text: #2d3436;
+  --crm-muted: #6c7a89;
+  --crm-primary: #84a9ac;
+  --crm-primary-dark: #688f93;
+  --crm-accent: #f08a5d;
+  --crm-accent-dark: #d4744b;
+  --crm-highlight: #c4dfe6;
+}
+
+html,
+body {
+  background-color: var(--crm-background);
+  color: var(--crm-text);
+}
+
+.navbar {
+  background-color: var(--crm-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.navbar .navbar-item,
+.navbar .navbar-link {
+  color: var(--crm-surface);
+}
+
+.navbar .navbar-item:hover,
+.navbar .navbar-item.is-active,
+.navbar .navbar-link:hover {
+  background-color: transparent;
+  color: var(--crm-highlight);
+}
+
+a.navbar-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.notification {
+  background-color: var(--crm-highlight);
+  color: var(--crm-text);
+}
+
+.box {
+  background-color: var(--crm-surface);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.table thead th {
+  background-color: var(--crm-primary);
+  color: var(--crm-surface);
+}
+
+.table tbody tr:nth-child(even) {
+  background-color: rgba(196, 223, 230, 0.35);
+}
+
+.button.is-primary {
+  background-color: var(--crm-primary);
+  border-color: var(--crm-primary-dark);
+  color: var(--crm-surface);
+}
+
+.button.is-primary:hover {
+  background-color: var(--crm-primary-dark);
+  border-color: var(--crm-primary-dark);
+}
+
+.button.is-info {
+  background-color: var(--crm-accent);
+  border-color: var(--crm-accent-dark);
+  color: var(--crm-surface);
+}
+
+.button.is-info:hover {
+  background-color: var(--crm-accent-dark);
+  border-color: var(--crm-accent-dark);
+}
+
+.button.is-danger.is-light {
+  background-color: rgba(240, 138, 93, 0.18);
+  color: var(--crm-accent-dark);
+}
+
+.button.is-danger.is-light:hover {
+  background-color: rgba(240, 138, 93, 0.28);
+}
+
+.section {
+  padding-top: 2.5rem;
+}
+
+.title,
+.subtitle,
+label.label {
+  color: var(--crm-text);
+}
+
+input.input,
+textarea.textarea,
+select.select select {
+  border-radius: 6px;
+  border-color: rgba(132, 169, 172, 0.4);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+input.input:focus,
+textarea.textarea:focus,
+select.select select:focus {
+  border-color: var(--crm-accent);
+  box-shadow: 0 0 0 0.1em rgba(240, 138, 93, 0.18);
+}
+
+.has-background-warning-light {
+  background-color: rgba(240, 138, 93, 0.18) !important;
+}
+
+.footer-note {
+  color: var(--crm-muted);
+  font-size: 0.85rem;
+  margin-top: 2rem;
+  text-align: center;
+}
