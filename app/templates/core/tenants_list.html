@@ -1,7 +1,9 @@
+<!-- 入居者一覧 -->
 {% extends "base.html" %}
 {% block title %}入居者{% endblock %}
 {% block content %}
   <h1 class="title">入居者一覧</h1>
+  <!-- 物件選択や編集を同じページ内のフォームで完結 -->
   {% include "core/tenant_form.html" %}
   <table class="table is-fullwidth is-striped">
     <thead>
@@ -16,6 +18,7 @@
     </thead>
     <tbody>
       {% for tenant in tenants %}
+        <!-- 編集中の行は背景色でハイライト -->
         <tr {% if editing_tenant and tenant.id == editing_tenant.id %}class="has-background-warning-light"{% endif %}>
           <td>{{ tenant.property.name if tenant.property else "-" }}</td>
           <td>{{ tenant.unit_number or "-" }}</td>
@@ -36,6 +39,7 @@
                 method="post"
                 action="{{ url_for('core.delete_tenant', tenant_id=tenant.id) }}"
               >
+                <!-- hidden で tenant_id / next_url を渡し、安全に削除 -->
                 {{ delete_forms[tenant.id].csrf_token }}
                 {{ delete_forms[tenant.id].tenant_id(value=tenant.id, id="tenant-delete-id-%s" % tenant.id) }}
                 {{ delete_forms[tenant.id].next_url(value=url_for('core.tenants', property_id=selected_property_id) if selected_property_id else url_for('core.tenants')) }}

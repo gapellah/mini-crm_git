@@ -1,10 +1,12 @@
+<!-- ログインフォーム -->
 {% extends "base.html" %}
 {% block title %}ログイン{% endblock %}
 {% block content %}
   <div class="column is-half is-offset-one-quarter">
+    <!-- Bulma のカラムでフォームを中央寄せ -->
     <h1 class="title">ログイン</h1>
     <form method="post">
-      {{ form.hidden_tag() }}
+      {{ form.hidden_tag() }} {# CSRF トークン #}
       <div class="field">
         <label class="label">{{ form.email.label }}</label>
         <div class="control">

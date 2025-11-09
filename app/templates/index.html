@@ -1,7 +1,9 @@
+<!-- ダッシュボード -->
 {% extends "base.html" %}
 {% block title %}ダッシュボード{% endblock %}
 {% block content %}
   <h1 class="title">ダッシュボード</h1>
+  <!-- KPI カード: 物件/入居者/契約の件数を即座に把握 -->
   <div class="columns">
     <div class="column">
       <div class="box has-text-centered">
@@ -23,6 +25,7 @@
     </div>
   </div>
   <div class="box">
+    <!-- 先月実績を棒+折れ線チャートで可視化 -->
     <h2 class="subtitle">先月の物件別家賃合計・入居者数</h2>
     <div style="height: 320px;">
       <canvas id="propertyRentChart"></canvas>
@@ -39,6 +42,7 @@
         const propertyLabels = {{ property_labels|tojson }};
         const propertyData = {{ property_values|tojson }};
         const propertyCounts = {{ property_counts|tojson }};
+        // 家賃は棒グラフ、入居者数は折れ線の複合チャート
         new Chart(propertyCtx, {
           type: "bar",
           data: {

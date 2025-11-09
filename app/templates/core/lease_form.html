@@ -1,4 +1,6 @@
+<!-- 契約の新規作成フォーム -->
 <div class="box">
+  <!-- 編集時は対象物件/号室をリマインドして誤操作を防ぐ -->
   <h2 class="subtitle">{{ '契約を編集' if editing_lease else '契約を追加' }}</h2>
   {% if editing_lease %}
     <div class="notification is-warning is-light">
@@ -37,6 +39,7 @@
       </div>
     </div>
     <div class="field">
+      <!-- tenant_id は hidden。tenant_display で誰の契約かを示す -->
       {{ form.tenant_id() }}
       <label class="label">{{ form.tenant_display.label }}</label>
       <div class="control">
@@ -109,6 +112,7 @@
     if (!select) {
       return;
     }
+    // 物件が切り替わったら同じビューを property_id 付きで再読込する
     select.addEventListener("change", function () {
       const params = new URLSearchParams(window.location.search);
       params.set("property_id", select.value);

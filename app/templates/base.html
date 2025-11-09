@@ -1,3 +1,4 @@
+<!-- 共通レイアウト -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -11,6 +12,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
   </head>
   <body>
+    <!-- グローバルナビ: 主要セクションと認証アクション -->
     <nav class="navbar" role="navigation" aria-label="main navigation">
       <div class="navbar-brand">
         <a class="navbar-item" href="{{ url_for('core.index') }}">ミニCRM</a>
@@ -41,6 +43,7 @@
 
     <section class="section">
       <div class="container">
+        <!-- フラッシュメッセージを共通レイアウトで吸い上げる -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -50,6 +53,7 @@
             {% endfor %}
           {% endif %}
         {% endwith %}
+        <!-- 各ページの個別コンテンツを挿入 -->
         {% block content %}{% endblock %}
       </div>
     </section>

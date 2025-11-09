@@ -45,15 +45,15 @@
 #       base.html          共通レイアウト
 #       index.html         ダッシュボード
 #       auth/
-#         login.html
-#         register.html
+#         login.html        ログインフォーム
+#         register.html     新規ユーザー登録フォーム
 #       core/
-#         properties_list.html
-#         property_form.html
-#         tenants_list.html
-#         tenant_form.html
-#         leases_list.html
-#         lease_form.html
+#         properties_list.html  物件一覧テーブル
+#         property_form.html    物件の新規作成・編集フォーム
+#         tenants_list.html     入居者一覧
+#         tenant_form.html      入居者の新規作成・編集フォーム
+#         leases_list.html      契約一覧
+#         lease_form.html       契約の新規作成フォーム
 #     static/              静的ファイル置き場
 #   migrations/            Flask-Migrate のメタデータとリビジョン
 #   tests/                 pytest のテストコード

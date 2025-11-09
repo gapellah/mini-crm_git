@@ -1,7 +1,9 @@
+<!-- 契約一覧 -->
 {% extends "base.html" %}
 {% block title %}契約{% endblock %}
 {% block content %}
   <h1 class="title">契約一覧</h1>
+  <!-- 画面上部で同一フォームを使い登録・編集を行う -->
   {% include "core/lease_form.html" %}
   <table class="table is-fullwidth is-striped">
     <thead>
@@ -19,6 +21,7 @@
     </thead>
     <tbody>
       {% for lease in leases %}
+        <!-- 編集対象や空室ダミーの行をスタイルで区別 -->
         <tr {% if editing_lease and editing_lease.id == lease.id %}class="has-background-warning-light"{% endif %}>
           <td>{{ lease.id or "-" }}</td>
           <td>{{ lease.property.name if lease.property else "-" }}</td>
@@ -48,6 +51,7 @@
                 method="post"
                 action="{{ url_for('core.delete_tenant', tenant_id=lease.tenant.id) }}"
               >
+                <!-- 契約削除ではなく入居者削除を経由するため hidden を厳密に渡す -->
                 {{ delete_forms[lease.tenant.id].csrf_token }}
                 {{ delete_forms[lease.tenant.id].tenant_id(value=lease.tenant.id, id="delete-tenant-id-%s" % lease.tenant.id) }}
                 {{ delete_forms[lease.tenant.id].next_url(value=url_for('core.leases', property_id=selected_property_id or lease.property_id)) }}
@@ -106,6 +110,7 @@
         unitSelect.addEventListener("change", syncTenantToUnit);
       }
 
+      // 初期表示時にも選択済み号室に応じた入居者を表示
       syncTenantToUnit();
     });
   </script>

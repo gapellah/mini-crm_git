@@ -1,4 +1,6 @@
+<!-- 物件の新規作成・編集フォーム -->
 <div class="box">
+  <!-- 編集中は対象物件を表示し、フォームのコンテキストを利用者に伝える -->
   <h2 class="subtitle">{{ '物件を編集' if editing_property else '物件を追加' }}</h2>
   {% if editing_property %}
     <div class="notification is-warning is-light">
@@ -8,6 +10,7 @@
   {% endif %}
   <form method="post">
     {{ form.hidden_tag() }}
+    <!-- hidden property_id で新規/更新を判定。バリデーション失敗時の状態維持にも使う -->
     {{ form.property_id() }}
     <div class="field">
       <label class="label">{{ form.name.label }}</label>

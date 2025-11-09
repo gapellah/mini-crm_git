@@ -1,4 +1,6 @@
+<!-- 入居者の新規作成・編集フォーム -->
 <div class="box">
+  <!-- 編集モードでは対象物件/号室/氏名を提示 -->
   <h2 class="subtitle">{{ '入居者を編集' if editing_tenant else '入居者を追加' }}</h2>
   {% if editing_tenant %}
     <div class="notification is-warning is-light">
@@ -8,6 +10,7 @@
   {% endif %}
   <form method="post">
     {{ form.hidden_tag() }}
+    <!-- tenant_id hidden で更新判定とステート持ち回りを実現 -->
     {{ form.tenant_id() }}
     <div class="field">
       <label class="label">{{ form.property_id.label }}</label>
@@ -70,6 +73,7 @@
     if (!select) {
       return;
     }
+    // 物件変更を URL クエリへ反映し、同一ページでフィルタリング
     select.addEventListener("change", function () {
       const params = new URLSearchParams(window.location.search);
       params.set("property_id", select.value);

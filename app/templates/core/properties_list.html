@@ -1,7 +1,9 @@
+<!-- 物件一覧テーブル -->
 {% extends "base.html" %}
 {% block title %}物件{% endblock %}
 {% block content %}
   <h1 class="title">物件一覧</h1>
+  <!-- 同じページ内で新規作成/編集フォームを表示 -->
   {% include "core/property_form.html" %}
   <table class="table is-fullwidth is-striped">
     <thead>
@@ -14,6 +16,7 @@
     </thead>
     <tbody>
       {% for property in properties %}
+        <!-- 編集対象の行は背景色で強調 -->
         <tr {% if editing_property and property.id == editing_property.id %}class="has-background-warning-light"{% endif %}>
           <td>{{ property.name }}</td>
           <td>{{ property.address }}</td>
@@ -29,6 +32,7 @@
                 >編集</a>
               {% endif %}
               <form method="post">
+                <!-- 削除は各行の CSRF 対応フォームで処理 -->
                 {{ delete_forms[property.id].hidden_tag() }}
                 {{ delete_forms[property.id].submit(class="button is-danger is-light") }}
               </form>

@@ -1,4 +1,4 @@
-"""物件・入居者・契約の管理画面ルートをまとめたモジュール。"""
+"""物件・入居者・契約のダッシュボードおよび CRUD ルートを束ねる Blueprint。"""
 
 from __future__ import annotations
 
@@ -30,16 +30,19 @@ STATUS_LABELS = dict(LEASE_STATUS_CHOICES)
 @core_bp.route("/")
 @login_required
 def index():
+    """ダッシュボード: 直近データの集計結果をカード+チャートで表示する。"""
     property_count = Property.query.count()
     tenant_count = Tenant.query.count()
     lease_count = Lease.query.count()
 
+    # 先月分の稼働実績を算出するために月初・月末を固定しておく。
     today = date.today().replace(day=1)
 
     last_month_end = today
     last_month_start = (today - timedelta(days=1)).replace(day=1)
     property_totals: dict[str, float] = {}
     last_day_prev_month = last_month_end - timedelta(days=1)
+    # 集計は SQL 側でまとめ、Python ではラベル整形のみを行う。
     lease_rows = (
         db.session.query(Property.id, Property.name, func.sum(Lease.rent), func.count(Lease.id))
         .join(Property, Lease.property_id == Property.id)
@@ -56,6 +59,7 @@ def index():
         property_totals[name] = float(total)
         property_counts[name] = int(count)
 
+    # グラフ側で空データにならないようプレースホルダーを用意。
     property_labels = list(property_totals.keys()) or ["データなし"]
     property_values = [round(total / 10000, 2) for total in property_totals.values()] or [0.0]
     property_counts_values = [property_counts.get(label, 0) for label in property_labels]
@@ -74,9 +78,11 @@ def index():
 @core_bp.route("/properties", methods=["GET", "POST"])
 @login_required
 def properties():
+    """物件の一覧表示と新規作成/更新/重複マージ/削除を同じ画面で扱う。"""
     form = PropertyForm()
     delete_form = DeletePropertyForm()
 
+    # GET property_id=xx があればフォームを編集モードに切り替える。
     edit_property_id = request.args.get("property_id", type=int)
     editing_property = None
     if edit_property_id is not None:
@@ -90,6 +96,7 @@ def properties():
 
     form.submit.label.text = "物件を更新" if editing_property else "物件を保存"
 
+    # 「保存」系ボタンは常に PropertyForm を使うためここで処理を分岐。
     if form.validate_on_submit():
         property_id_raw = (form.property_id.data or "").strip()
         property_id_value = int(property_id_raw) if property_id_raw.isdigit() else None
@@ -101,6 +108,7 @@ def properties():
         )
 
         if property_id_value:
+            # 既存物件を更新しつつ、重複 Name をマージする。
             property_obj = Property.query.get_or_404(property_id_value)
             property_obj.name = normalized_name
             property_obj.address = form.address.data
@@ -119,6 +127,7 @@ def properties():
             return redirect(url_for("core.properties"))
 
         if existing_properties:
+            # 新規登録でも同名物件がある場合は先勝ちの1件に集約する。
             canonical_property = existing_properties[0]
             canonical_property.name = normalized_name
             canonical_property.address = form.address.data
@@ -147,6 +156,7 @@ def properties():
         return redirect(url_for("core.properties"))
 
     if delete_form.validate_on_submit():
+        # 削除は CSRF 付き個別フォームを使い、関連リレーションごと落とす。
         try:
             property_id = int(delete_form.property_id.data)
         except (TypeError, ValueError):
@@ -158,6 +168,7 @@ def properties():
         flash("物件と関連情報を削除しました。", "info")
         return redirect(url_for("core.properties"))
 
+    # 一覧テーブルを描画するためのデータと削除フォームを構築。
     properties_list = Property.query.order_by(Property.name).all()
     delete_forms = {}
     for property_obj in properties_list:
@@ -176,16 +187,19 @@ def properties():
 @core_bp.route("/tenants", methods=["GET", "POST"])
 @login_required
 def tenants():
+    """入居者の物件別フィルタ・一覧・編集を 1 画面で提供する。"""
     form = TenantForm()
     properties = Property.query.order_by(Property.name).all()
     property_choices = [(prop.id, prop.name) for prop in properties]
     form.property_id.choices = property_choices
+    # 物件が無い場合は早期に利用者へ案内する。
     if not properties:
         flash("先に物件を登録してください。", "warning")
 
     property_ids = [choice[0] for choice in property_choices]
     selected_property_id = form.property_id.data if form.property_id.data in property_ids else None
     if selected_property_id is None:
+        # URL クエリから選択物件を決め、なければ先頭をフォールバック。
         selected_property_id = request.args.get("property_id", type=int)
         if property_ids:
             if selected_property_id not in property_ids:
@@ -195,6 +209,7 @@ def tenants():
 
     edit_tenant_id = request.args.get("tenant_id", type=int)
     if edit_tenant_id is None:
+        # POST 後のバリデーションで tenant_id が失われないよう hidden を参照。
         tenant_id_raw = (form.tenant_id.data or "").strip()
         if tenant_id_raw.isdigit():
             edit_tenant_id = int(tenant_id_raw)
@@ -216,6 +231,8 @@ def tenants():
 
     form.submit.label.text = "入居者を更新" if editing_tenant else "入居者を保存"
 
+    # submit 時には hidden の tenant_id 有無で新規/更新を振り分ける。
+    # バリデーションで落ちた場合もここを再実行するので状態復元が必要。
     if form.validate_on_submit():
         tenant_id_value = (form.tenant_id.data or "").strip()
         if tenant_id_value:
@@ -241,9 +258,11 @@ def tenants():
         flash("入居者を登録しました。", "success")
         return redirect(url_for("core.tenants", property_id=form.property_id.data))
 
+    # GET 直後は property_id が未設定なので、選択している物件を改めて反映。
     if request.method == "GET" and selected_property_id is not None:
         form.property_id.data = selected_property_id
 
+    # テーブルは property -> tenant の順で並べる。joinedload で N+1 を防ぐ。
     tenants_query = (
         Tenant.query.options(joinedload(Tenant.property))
         .outerjoin(Property)
@@ -270,13 +289,16 @@ def tenants():
 @core_bp.route("/leases", methods=["GET", "POST"])
 @login_required
 def leases():
+    """契約の一覧＋フォーム。物件/部屋に応じて入居者候補を自動選択する。"""
     form = LeaseForm()
     properties = Property.query.order_by(Property.name).all()
     tenants = Tenant.query.order_by(Tenant.name).all()
+    # SelectField の選択肢は都度再構築し、未登録時は警告を出す。
     properties_choices = [(prop.id, prop.name) for prop in properties]
     form.property_id.choices = properties_choices
 
     if request.method == "GET":
+        # GET 初期表示では開始日・ステータスに既定値を入れておく。
         if not form.start_date.data:
             form.start_date.data = date.today()
         if not form.status.data:
@@ -306,6 +328,7 @@ def leases():
     if selected_property_id is not None:
         form.property_id.data = selected_property_id
 
+    # 物件ごとの入居者一覧から号室の選択肢を構築する。
     tenants_by_property: dict[int, list[Tenant]] = {}
     for tenant in tenants:
         if tenant.property_id is None or not tenant.unit_number:
@@ -326,6 +349,7 @@ def leases():
         form.unit_number.data = ""
 
     if editing_lease:
+        # 編集時は既存の号室や値をそのままフォームに差し戻す。
         if editing_lease.unit_number and editing_lease.unit_number not in valid_units:
             form.unit_number.choices.append((editing_lease.unit_number, editing_lease.unit_number))
             valid_units.add(editing_lease.unit_number)
@@ -348,6 +372,7 @@ def leases():
         flash("契約を作成する前に物件と入居者を登録してください。", "warning")
         return redirect(url_for("core.leases"))
 
+    # hidden lease_id の有無で更新/新規を判定し、必要に応じて既存契約を上書き。
     if form.validate_on_submit():
         try:
             tenant_id = int(form.tenant_id.data)
@@ -414,6 +439,7 @@ def leases():
         .order_by(Property.name.asc(), Lease.unit_number.asc(), Lease.start_date.desc())
     )
 
+    # 一覧は選択された物件で絞り込み可能。
     if selected_property_id is not None:
         lease_query = lease_query.filter(Lease.property_id == selected_property_id)
 
@@ -467,6 +493,7 @@ def leases():
 
         leases_list = sorted([*leases_list, *vacancy_rows], key=lease_sort_key)
 
+    # 前面の JavaScript で物件 -> (入居者, 号室) を引き当てるための辞書。
     tenants_data: dict[str, list[dict[str, str]]] = {}
     for tenant in tenants:
         key = str(tenant.property_id) if tenant.property_id is not None else "0"
@@ -501,6 +528,7 @@ def leases():
 @login_required
 def delete_tenant(tenant_id: int):
     form = DeleteTenantForm()
+    # CSRF + hidden で二重送信を防ぎ、安全に対象レコードを特定する。
     if not (form.submit.data and form.validate()):
         flash("削除に失敗しました。", "danger")
         return redirect(url_for("core.leases"))
