@@ -1,5 +1,7 @@
 """物件・入居者・契約管理で利用するフォーム群を提供するモジュール。"""
 
+from __future__ import annotations
+
 from flask_wtf import FlaskForm
 from wtforms import DateField, DecimalField, HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Email, Optional

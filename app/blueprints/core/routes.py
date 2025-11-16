@@ -37,32 +37,46 @@ def index():
 
     # 先月分の稼働実績を算出するために月初・月末を固定しておく。
     today = date.today().replace(day=1)
+    next_month_start = (today + timedelta(days=32)).replace(day=1)
 
     last_month_end = today
     last_month_start = (today - timedelta(days=1)).replace(day=1)
-    property_totals: dict[str, float] = {}
     last_day_prev_month = last_month_end - timedelta(days=1)
-    # 集計は SQL 側でまとめ、Python ではラベル整形のみを行う。
-    lease_rows = (
-        db.session.query(Property.id, Property.name, func.sum(Lease.rent), func.count(Lease.id))
-        .join(Property, Lease.property_id == Property.id)
-        .filter(Lease.start_date <= last_day_prev_month)
-        .filter(or_(Lease.end_date.is_(None), Lease.end_date >= last_month_start))
-        .group_by(Property.id)
-        .order_by(Property.name)
-        .all()
-    )
 
-    property_totals = {}
-    property_counts = {}
-    for property_id, name, total, count in lease_rows:
-        property_totals[name] = float(total)
-        property_counts[name] = int(count)
+    def aggregate_property_metrics(start: date, end: date) -> tuple[dict[str, float], dict[str, int]]:
+        """指定期間に稼働する契約を物件ごとに集計する."""
+        lease_rows = (
+            db.session.query(Property.id, Property.name, func.sum(Lease.rent), func.count(Lease.id))
+            .join(Property, Lease.property_id == Property.id)
+            .filter(Lease.start_date <= end)
+            .filter(or_(Lease.end_date.is_(None), Lease.end_date >= start))
+            .group_by(Property.id)
+            .order_by(Property.name)
+            .all()
+        )
+        totals: dict[str, float] = {}
+        counts: dict[str, int] = {}
+        for _, name, total, count in lease_rows:
+            totals[name] = float(total)
+            counts[name] = int(count)
+        return totals, counts
 
-    # グラフ側で空データにならないようプレースホルダーを用意。
-    property_labels = list(property_totals.keys()) or ["データなし"]
-    property_values = [round(total / 10000, 2) for total in property_totals.values()] or [0.0]
-    property_counts_values = [property_counts.get(label, 0) for label in property_labels]
+    property_totals, property_counts = aggregate_property_metrics(last_month_start, last_day_prev_month)
+    forecast_totals, forecast_counts = aggregate_property_metrics(today, next_month_start - timedelta(days=1))
+
+    # 実績・予測どちらかに存在する物件名をすべて軸ラベル化する。
+    property_labels = sorted(set(property_totals.keys()) | set(forecast_totals.keys()))
+    if not property_labels:
+        property_labels = ["データなし"]
+
+    property_values = [
+        round(property_totals.get(label, 0.0) / 10000, 2) for label in property_labels
+    ] or [0.0]
+    property_counts_values = [property_counts.get(label, 0) for label in property_labels] or [0]
+    forecast_values = [
+        round(forecast_totals.get(label, 0.0) / 10000, 2) for label in property_labels
+    ] or [0.0]
+    forecast_counts_values = [forecast_counts.get(label, 0) for label in property_labels] or [0]
 
     return render_template(
         "index.html",
@@ -72,6 +86,8 @@ def index():
         property_labels=property_labels,
         property_values=property_values,
         property_counts=property_counts_values,
+        forecast_values=forecast_values,
+        forecast_counts=forecast_counts_values,
     )
 
 
